@@ -1,18 +1,36 @@
 import React, { Component } from "react";
-import { Button, Form, Input,Col } from "antd";
+import { Button, Form, Input, Col, message } from "antd";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import { connect } from "react-redux";
+import {Redirect} from 'react-router-dom'
+import {
+  createSaveUserInfoAction
+} from "../../redux/actions_creators/login_action";
+import { reqLogin } from "../../api";
 import "./css/login.css";
 import logo from "./imgs/logo.png";
 const { Item } = Form;
 
-export default class Login extends Component {
+class Login extends Component {
   state = {
     passwordValidateStatus: null,
     passwordErrorMsg: null,
     password: null,
   };
 
-  onFinish = (values) => {
+  onFinish = async (values) => {
+    // values = {usename:xxx, password:yyy}
+    const { username, password } = values;
+    let result = await reqLogin(username, password);
+    const {status,msg,data} = result
+    if(status === 0){
+      this.props.saveUserInfo(data)
+      //jump to admin page
+      this.props.history.replace('./admin')
+    }else{
+      // message.warning(msg) 
+      message.warning("username or password error")
+    }
     console.log("Success:", values);
   };
   onFinishFailed = (errorInfo) => {
@@ -56,7 +74,15 @@ export default class Login extends Component {
     });
   };
 
+  action = () => {
+    this.props.demo2("0719");
+  };
+
   render() {
+    const {isLogin} = this.props;
+    if(isLogin) {
+      return <Redirect to="/admin"/>
+    }
     return (
       <div className="login">
         <header>
@@ -126,3 +152,7 @@ export default class Login extends Component {
     );
   }
 }
+
+export default connect((state) => ({isLogin:state.userInfo.isLogin}), {
+  saveUserInfo: createSaveUserInfoAction,
+})(Login);
