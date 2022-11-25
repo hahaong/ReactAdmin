@@ -5,13 +5,6 @@ import { connect } from "react-redux";
 import { createSaveTitleAction } from "../../../redux/actions_creators/menu_action";
 import logo from "../../../static/imgs/logo.png";
 import {
-  AppstoreOutlined,
-  ContainerOutlined,
-  DesktopOutlined,
-  MailOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  PieChartOutlined,
   HomeOutlined,
   UserAddOutlined,
   FolderOpenOutlined,
@@ -68,7 +61,7 @@ class LeftNav extends Component {
         </header>
         <Menu
           onClick={this.onClick}
-          defaultSelectedKeys={[this.props.location.pathname]}
+          selectedKeys={[this.props.location.pathname]}
           defaultOpenKeys={[
             ...this.props.location.pathname.split("/").splice(2),
           ]}
