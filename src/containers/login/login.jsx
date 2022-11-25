@@ -8,7 +8,7 @@ import {
 } from "../../redux/actions_creators/login_action";
 import { reqLogin } from "../../api";
 import "./css/login.css";
-import logo from "./imgs/logo.png";
+import logo from "../../static/imgs/logo.png";
 const { Item } = Form;
 
 

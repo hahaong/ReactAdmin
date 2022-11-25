@@ -16,6 +16,7 @@ const { confirm } = Modal;
 @connect(
   (state) => ({
     userInfo: state.userInfo,
+    title:state.title
   }),
   { deleteUser: createDeleteUserInfoAction }
 )
@@ -23,16 +24,17 @@ const { confirm } = Modal;
 class Header extends Component {
   state = {
     isFull: false,
-    date:dayjs().format('YYYY-MM-DD HH:mm:ss')
+    date:dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    title:''
   };
 
   componentDidMount() {
-    console.log(this.props)
+    this.getTitle();
     screenfull.on("change", () => {
       this.setState({ isFull: !this.state.isFull });
     });
     this.timeID = setInterval(()=>{
-      this.setState({date:dayjs().format('YYYY MM-DD HH:mm:ss')})
+      this.setState({date:dayjs().format('YYYY-MM-DD HH:mm:ss')})
     },1000)
   }
 
@@ -44,23 +46,6 @@ class Header extends Component {
     screenfull.toggle();
   };
 
-  logOut = () => {
-    this.props.deleteUser();
-  };
-
-  showModal = () => {
-    this.setState({
-      open: true,
-    });
-  };
-
-  hideModal = () => {
-    this.setState({
-      open: false,
-    });
-    this.logOut();
-  };
-
   showConfirm = () => {
     confirm({
       title: "Confirm to Logout?",
@@ -68,7 +53,7 @@ class Header extends Component {
       content: "You would need to login again.",
       onOk: () => {
         console.log("OK");
-        this.logOut();
+        this.props.deleteUser();
       },
       onCancel: () => {
         console.log("Cancel");
@@ -76,8 +61,14 @@ class Header extends Component {
     });
   };
 
+  getTitle = () =>{
+    let title = this.props.location.pathname.split('/').reverse()[0];
+    title = title.charAt(0).toUpperCase() + title.slice(1)
+    this.setState({title}) //get the last string of http path
+  }
+
   render() {
-    let { isFull, open } = this.state;
+    let {isFull} = this.state;
     let { user } = this.props.userInfo;
     return (
       <header className="header">
@@ -92,7 +83,10 @@ class Header extends Component {
           </Button>
         </div>
         <div className="header-bottom">
-          <div className="header-bottom-left">{this.props.location.pathname}</div>
+          <div className="header-bottom-left">
+            {this.props.title || this.state.title}
+            {/* {this.props.location.pathname} */}
+            </div>
           <div className="header-bottom-right">{this.state.date}</div>
         </div>
       </header>
