@@ -14,8 +14,6 @@ import LeftNav from './left_nav/left_nav'
 import Registration from '../registration/registration'
 import Category from '../category/category'
 import Person from '../person/person'
-import Detail from '../person/detail'
-import AddUpdate from '../person/add_update'
 import User from '../user/user'
 import Role from '../role/role'
 import Bar from '../bar/bar'
@@ -59,8 +57,6 @@ class Admin extends Component {
                   <Route path = "/admin/registration" component={Registration}></Route>
                   <Route path = "/admin/management/category" component={Category}></Route>
                   <Route path = "/admin/management/person" component={Person}></Route>
-                  <Route path = "/admin/management/person/detail" component={Detail}></Route>
-                  <Route path = "/admin/management/person/add" component={AddUpdate}></Route>
                   <Route path = "/admin/user" component={User}></Route>
                   <Route path = "/admin/role" component={Role}></Route>
                   <Route path = "/admin/bar" component={Bar}></Route>

@@ -10,10 +10,17 @@ import {
     query,
     where,
     serverTimestamp,
-    orderBy
+    orderBy,
+    getCount,
+    limit,
+    startAt,
+    endAt
 } from "firebase/firestore/lite";
 
-export const getDocuments = async (db, col) => {
+import { db, PAGE_SIZE } from "../config"
+
+
+export const getDocuments = async (col) => {
     try {
         let myCollection = collection(db, col);
         let myQuery = query(myCollection, orderBy('createdAt'))
@@ -24,12 +31,13 @@ export const getDocuments = async (db, col) => {
         }
         return result
     } catch (error) {
+        console.log(error.message)
         message.error(error.message, 5)
         return new Promise(() => { })
     }
 }
 
-export const searchDocument = async (db, col, target, data) => {
+export const searchDocument = async (col, target, data) => {
     try {
         let myCollection = collection(db, col);
         let myQuery = query(myCollection, where(target, "==", data))
@@ -43,7 +51,7 @@ export const searchDocument = async (db, col, target, data) => {
 }
 
 
-export const checkDuplication = async (db, col, target, data) => {
+export const checkDuplication = async (col, target, data) => {
     try {
         let myCollection = collection(db, col);
         let myQuery = query(myCollection, where(target, "==", data))
@@ -60,7 +68,7 @@ export const checkDuplication = async (db, col, target, data) => {
     }
 }
 
-export const addDocument = async (db, col, data) => {
+export const addDocument = async (col, data) => {
     try {
         let result = await addDoc(collection(db, col), { ...data, createdAt: serverTimestamp() })
         return result
@@ -71,7 +79,7 @@ export const addDocument = async (db, col, data) => {
 }
 
 
-export const updateDocument = async (db, col, id, target, data) => {
+export const updateDocument = async (col, id, target, data) => {
     try {
         const myDoc = doc(db, col, id)
         const newFields = { [target]: data }
@@ -83,11 +91,79 @@ export const updateDocument = async (db, col, id, target, data) => {
     }
 }
 
-export const deleteDocument = async (db, col, id) => {
+export const deleteDocument = async (col, id) => {
     try {
         const myDoc = doc(db, col, id)
         let result = await deleteDoc(myDoc)
         return result;
+    } catch (error) {
+        message.error(error.message, 5)
+        return new Promise(() => { })
+    }
+}
+
+//get total data count of a collection
+export const getTotalCount = async (col) => {
+    try {
+        const snapshot = await getCount(collection(db, col));
+        return snapshot.data().count;
+    } catch (error) {
+        message.error(error.message, 5)
+        return new Promise(() => { })
+    }
+}
+
+//currentPageNum and totalPageNumber is important to do number pagination
+export const pagination = async (col, target, currentPageNum, searchType = "", keyword = "") => {
+    try {
+        let requestDataNumber = currentPageNum * PAGE_SIZE
+        let total
+        let myQuery
+        let result
+        let resultSize
+        if (keyword == "") {
+            total = await getCount(query(collection(db, col)))
+            myQuery = query(collection(db, col), orderBy(target), limit(requestDataNumber))
+            total = total.data().count
+            result = await getDocs(myQuery);
+            resultSize = result.size
+        }
+
+        else {
+            // console.log("myFirebase Search function...")
+            total = await getCount(query(collection(db, col), orderBy(searchType), startAt(keyword)))
+            total = total.data().count
+            myQuery = query(collection(db, col), orderBy(searchType), startAt(keyword), endAt(keyword), limit(requestDataNumber))
+            result = await getDocs(myQuery);
+            resultSize = result.size
+        }
+
+        if(resultSize == 0){
+            message.warning('Data not found, please try again', 5)
+            return new Promise(() => { })
+        }
+
+        let currentPageInfo = (resultSize % PAGE_SIZE == 0) ?
+            {
+                currentPageData: result.docs.splice(-PAGE_SIZE),
+                currentPageNumber: currentPageNum,
+                totalPageNumber: total
+            } : {
+                currentPageData: result.docs.splice(-(resultSize % PAGE_SIZE)),
+                currentPageNumber: currentPageNum,
+                totalPageNumber: total
+            }
+        // console.log("target", target)
+        // console.log("currentPageNum", currentPageNum)
+        // console.log("requestDataNumber", requestDataNumber)
+        // console.log("searchType", searchType)
+        // console.log("keyword", keyword)
+        // console.log("total", total)
+        // console.log("result", result)
+        // console.log("resultSize", resultSize)
+        // console.log("PAGE_SIZE", PAGE_SIZE)
+        // console.log("currentPageInfo", currentPageInfo)
+        return currentPageInfo
     } catch (error) {
         message.error(error.message, 5)
         return new Promise(() => { })

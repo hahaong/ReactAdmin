@@ -1,6 +1,6 @@
 import React, { Component, Fragment } from "react";
 import { Card, Button, Table, Modal, Form, Input, message } from "antd";
-import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 
 import {
   reqCategoryList,
@@ -14,6 +14,7 @@ const { Item } = Form;
 
 const Category = () => {
   const [form] = Form.useForm();
+
   const [state, setState] = React.useState({
     categoryList: [],
     isModalOpen: false,
@@ -90,7 +91,7 @@ const Category = () => {
 
   const toAdd = async (values) => {
     let { categoryName } = values;
-    await reqCheckDuplicationCategoryList(categoryName);
+    await reqCheckDuplicationCategoryList("type", categoryName);
     let result = await reqAddCategory({ type: categoryName });
     if (result) {
       message.success("Successfully added a new category");
@@ -107,7 +108,7 @@ const Category = () => {
 
   const toUpdate = async (categoryObj) => {
     let { categoryId, categoryName } = categoryObj;
-    let result = await reqUpdateCategory(categoryId, categoryName);
+    let result = await reqUpdateCategory(categoryId, "type", categoryName);
     message.success("Successfully updated category name");
     getCatagoryList();
   };
@@ -185,7 +186,7 @@ const Category = () => {
     },
   ];
   return (
-    <div className="site-card-border-less-wrapper">
+    <Fragment>
       <Card
         title="Category Management"
         extra={
@@ -194,12 +195,10 @@ const Category = () => {
             onClick={() => {
               showAdd();
             }}
-            icon={<PlusOutlined />}
           >
             Add
           </Button>
         }
-        bordered={false}
       >
         <Table
           bordered
@@ -210,7 +209,6 @@ const Category = () => {
           loading={state.isLoading}
         />
       </Card>
-
       <Modal
         title={
           state.operationType === "add" ? "Add Category" : "Update Category"
@@ -225,27 +223,22 @@ const Category = () => {
           onFinishFailed={onFinishFailed}
           autoComplete="off"
           form={form}
-          onValuesChange={(obj) => {
-            form.setFieldsValue({
-              categoryName: obj.categoryName.toUpperCase(),
-            });
-          }}
         >
           <Item
             name="categoryName"
+            initialValue=""
             rules={[
               { required: true, message: "Please input your category name!" },
             ]}
           >
             <Input
-              placeholder="Please enter category name"
               style={{ width: "100%" }}
-              allowClear
+              placeholder="Please enter category name"
             />
           </Item>
         </Form>
       </Modal>
-    </div>
+    </Fragment>
   );
 };
 
