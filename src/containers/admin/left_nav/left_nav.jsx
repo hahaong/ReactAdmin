@@ -32,46 +32,48 @@ const items = [
     getItem("Person", "/admin/management/person", <IdcardOutlined />),
   ]),
 ];
+const LeftNav = (props) => {
 
-@connect((state) => ({}), {
-  saveTitle: createSaveTitleAction,
-})
-@withRouter
-class LeftNav extends Component {
-
-  onClick = ({ key }) => {
+  const onClick = ({ key }) => {
     //collapsed menus do not involve in navigation
     if (key.split("/").length != 0) {
       //save title to redux
       let title = key.split('/').reverse()[0];
       title = title.charAt(0).toUpperCase() + title.slice(1)
-      this.props.saveTitle(title)
+      props.saveTitle(title)
       
       //navigate to corresponding path by key
-      this.props.history.replace(key);
+      props.history.replace(key);
     }
   };
 
-  render() {
-    return (
-      <div>
-        <header className="nav-header">
-          <img src={logo} alt="" />
-          <h1>ALPR</h1>
-        </header>
-        <Menu
-          onClick={this.onClick}
-          selectedKeys={[this.props.location.pathname]}
-          defaultOpenKeys={[
-            ...this.props.location.pathname.split("/").splice(2),
-          ]}
-          mode="inline"
-          theme="dark"
-          items={items}
-        />
-      </div>
-    );
-  }
+
+  return (
+    <div>
+      <header className="nav-header">
+        <img src={logo} alt="" />
+        <h1>ALPR</h1>
+      </header>
+      <Menu
+        onClick={onClick}
+        selectedKeys={[
+          props.location.pathname.indexOf('person') !== -1 ? "/admin/management/person" :
+          props.location.pathname
+        ]}
+        defaultOpenKeys={[
+          ...props.location.pathname.split("/").splice(2),
+        ]}
+        mode="inline"
+        theme="dark"
+        items={items}
+      />
+    </div>
+  );
 }
 
-export default LeftNav;
+export default connect(
+  (state) => ({}),
+  {
+    saveTitle: createSaveTitleAction,
+  }
+)(withRouter(LeftNav))

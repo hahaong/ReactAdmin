@@ -1,5 +1,6 @@
 import React, { Component, Fragment } from "react";
 import { Card, Button, Table, Modal, Form, Input, message } from "antd";
+import { connect } from "react-redux";
 import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
 
 import {
@@ -10,21 +11,40 @@ import {
   reqDeleteCategory,
 } from "../../api/index";
 import { PAGE_SIZE } from "../../config";
+import { createSaveCategoryAction } from "../../redux/actions_creators/category_action";
+
 const { Item } = Form;
 
-const Category = () => {
+const Category = (props) => {
   const [form] = Form.useForm();
-  const [state, setState] = React.useState({
-    categoryList: [],
-    isModalOpen: false,
-    operationType: "",
-    isLoading: true,
-    categoryId: "",
-  });
+
+  const[categoryList, setCategoryList] = React.useState([])
+  const[isModalOpen, setIsModalOpen] = React.useState(false)
+  const[operationType, setOperationType] = React.useState("")
+  const[isLoading, setIsLoading] = React.useState(true)
+  const[categoryId, setCategoryId] = React.useState("")
 
   React.useEffect(() => {
     getCatagoryList();
   }, []);
+
+  const getCatagoryList = async () => {
+    const result = await reqCategoryList();
+    if (!result.empty) {
+      const resultList = result.docs.map((doc) => ({
+        key: doc.id,
+        categoryName: doc.data().type,
+      }));
+      setCategoryList(resultList.reverse())
+      setIsLoading(false)
+
+      //save CategoryList to redux
+      props.saveCategory(resultList)
+    } else {
+      message.warning("Retrieved empty data");
+      setIsLoading(false)
+    }
+  };
 
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
@@ -35,22 +55,16 @@ const Category = () => {
   };
 
   const showAdd = () => {
-    setState({
-      ...state,
-      isModalOpen: true,
-      operationType: "add",
-    });
+    setIsModalOpen(true)
+    setOperationType("add")
   };
 
   const showUpdate = (item) => {
     const { key, categoryName } = item;
     form.setFieldValue("categoryName", categoryName);
-    setState({
-      ...state,
-      categoryId: key,
-      isModalOpen: true,
-      operationType: "update",
-    });
+    setCategoryId(key)
+    setIsModalOpen(true)
+    setOperationType("update")
   };
 
   const showDelete = (item) => {
@@ -65,27 +79,8 @@ const Category = () => {
         toDelete({ categoryId: key, categoryName });
       },
     });
-
-    setState({
-      ...state,
-      categoryId: key,
-      operationType: "delete",
-    });
-  };
-
-  const getCatagoryList = async () => {
-    const result = await reqCategoryList();
-    setState({
-      ...state,
-      isLoading: false,
-    });
-    const resultList = result.docs.map((doc) => ({
-      key: doc.id,
-      categoryName: doc.data().type,
-    }));
-    setState({
-      categoryList: resultList.reverse(),
-    });
+    setCategoryId(key)
+    setOperationType("delete")
   };
 
   const toAdd = async (values) => {
@@ -94,12 +89,9 @@ const Category = () => {
     let result = await reqAddCategory({ type: categoryName });
     if (result) {
       message.success("Successfully added a new category");
-      setState({
-        ...state,
-        isModalOpen: false,
-      });
       form.resetFields();
       getCatagoryList();
+      setIsModalOpen(false)
     } else {
       message.error("Add category failed, please try again");
     }
@@ -107,9 +99,10 @@ const Category = () => {
 
   const toUpdate = async (categoryObj) => {
     let { categoryId, categoryName } = categoryObj;
-    let result = await reqUpdateCategory(categoryId, categoryName);
+    let result = await reqUpdateCategory(categoryId,{type:categoryName});
     message.success("Successfully updated category name");
     getCatagoryList();
+    setIsModalOpen(false)
   };
 
   const toDelete = async (categoryObj) => {
@@ -120,7 +113,6 @@ const Category = () => {
   };
 
   const handleOk = () => {
-    const { operationType } = state;
     form
       .validateFields()
       .then((values) => {
@@ -128,7 +120,6 @@ const Category = () => {
           toAdd(values);
         }
         if (operationType == "update") {
-          const categoryId = state.categoryId;
           const categoryName = values.categoryName;
           const categoryObj = { categoryId, categoryName };
           toUpdate(categoryObj);
@@ -136,16 +127,14 @@ const Category = () => {
         return;
       })
       .catch((errorInfo) => {
+        console.log(errorInfo)
         message.warning(errorInfo.errorFields[0].errors[0]);
       });
   };
 
   const handleCancel = () => {
     form.resetFields();
-    setState({
-      ...state,
-      isModalOpen: false,
-    });
+    setIsModalOpen(false)
   };
 
   const columns = [
@@ -203,19 +192,19 @@ const Category = () => {
       >
         <Table
           bordered
-          dataSource={state.categoryList}
+          dataSource={categoryList}
           columns={columns}
           rowKey="key"
           pagination={{ pageSize: PAGE_SIZE, showQuickJumper: true }}
-          loading={state.isLoading}
+          loading={isLoading}
         />
       </Card>
 
       <Modal
         title={
-          state.operationType === "add" ? "Add Category" : "Update Category"
+          operationType === "add" ? "Add Category" : "Update Category"
         }
-        open={state.isModalOpen}
+        open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
       >
@@ -249,4 +238,6 @@ const Category = () => {
   );
 };
 
-export default Category;
+export default connect((state) => {return {}}, {
+  saveCategory: createSaveCategoryAction,
+})(Category);

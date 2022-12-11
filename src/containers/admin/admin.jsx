@@ -28,7 +28,7 @@ const {Footer, Sider, Content } = Layout;
 
 class Admin extends Component {
   componentDidMount() {
-    console.log(this.props);
+    // console.log(this.props);
   }
 
   logout = () =>{
@@ -58,9 +58,10 @@ class Admin extends Component {
                   <Route path = "/admin/home" component={Home}></Route>
                   <Route path = "/admin/registration" component={Registration}></Route>
                   <Route path = "/admin/management/category" component={Category}></Route>
-                  <Route path = "/admin/management/person" component={Person}></Route>
-                  <Route path = "/admin/management/person/detail" component={Detail}></Route>
-                  <Route path = "/admin/management/person/add" component={AddUpdate}></Route>
+                  <Route path = "/admin/management/person" component={Person} exact></Route>
+                  <Route path = "/admin/management/person/detail/:id" component={Detail}></Route>
+                  <Route path = "/admin/management/person/add_update" component={AddUpdate} exact></Route>
+                  <Route path = "/admin/management/person/add_update/:id" component={AddUpdate}></Route>
                   <Route path = "/admin/user" component={User}></Route>
                   <Route path = "/admin/role" component={Role}></Route>
                   <Route path = "/admin/bar" component={Bar}></Route>
@@ -68,7 +69,6 @@ class Admin extends Component {
                   <Route path = "/admin/pie" component={Pie}></Route>
                  <Redirect to = "/admin/home"></Redirect>
                 </Switch>
-  
                 </Content>
               <Footer className="footer">Google Chrome is recommended for the best user experience</Footer>
             </Layout>

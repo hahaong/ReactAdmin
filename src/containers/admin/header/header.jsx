@@ -1,7 +1,7 @@
-import React, { Component } from "react";
-import {withRouter} from "react-router-dom";
-import dayjs from 'dayjs'
-import { Button, Modal, Space } from "antd";
+import React from "react";
+import { withRouter } from "react-router-dom";
+import dayjs from "dayjs";
+import { Button, Modal } from "antd";
 import {
   FullscreenOutlined,
   FullscreenExitOutlined,
@@ -10,50 +10,45 @@ import {
 import screenfull from "screenfull";
 import { connect } from "react-redux";
 import { createDeleteUserInfoAction } from "../../../redux/actions_creators/login_action";
+import { TITLES_MAP } from "../../../config";
 import "./css/header.css";
 
-const { confirm } = Modal;
-@connect(
-  (state) => ({
-    userInfo: state.userInfo,
-    title:state.title
-  }),
-  { deleteUser: createDeleteUserInfoAction }
-)
-@withRouter
-class Header extends Component {
-  state = {
+function Header(props) {
+  const { confirm } = Modal;
+
+  const [state, setState] = React.useState({
     isFull: false,
-    date:dayjs().format('YYYY-MM-DD HH:mm:ss'),
-    title:''
-  };
+    date: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+    title: "",
+  });
 
-  componentDidMount() {
-    this.getTitle();
+  React.useEffect(() => {
     screenfull.on("change", () => {
-      this.setState({ isFull: !this.state.isFull });
+      setState({ ...state, isFull: !state.isFull });
     });
-    this.timeID = setInterval(()=>{
-      this.setState({date:dayjs().format('YYYY-MM-DD HH:mm:ss')})
-    },1000)
-  }
+    let timeID = setInterval(() => {
+      setState({ ...state, date: dayjs().format("YYYY-MM-DD HH:mm:ss") });
+    }, 1000);
+    return () => clearInterval(timeID);
+  }, []);
 
-  componentWillUnmount(){
-    clearInterval(this.timeID)
-  }
 
-  fullScreen = () => {
+  React.useEffect(() => {
+    getTitle();
+  }, [state.title]);
+
+  const fullScreen = () => {
     screenfull.toggle();
   };
 
-  showConfirm = () => {
+  const showConfirm = () => {
     confirm({
       title: "Confirm to Logout?",
       icon: <ExclamationCircleFilled />,
       content: "You would need to login again.",
       onOk: () => {
         console.log("OK");
-        this.props.deleteUser();
+        props.deleteUser();
       },
       onCancel: () => {
         console.log("Cancel");
@@ -61,36 +56,57 @@ class Header extends Component {
     });
   };
 
-  getTitle = () =>{
-    let title = this.props.location.pathname.split('/').reverse()[0];
-    title = title.charAt(0).toUpperCase() + title.slice(1)
-    this.setState({title}) //get the last string of http path
-  }
+  const getTitle = () => {
+    if (props.location.pathname.includes("detail")) {
+      setState({ ...state, title:"Detail" });
+      return
+    }
+    if (props.location.pathname.includes("add")) {
+      setState({ ...state, title:"Register" });
+      return
+    }
+    if (props.location.pathname.includes("update")) {
+      setState({ ...state, title:"Update" });
+      return
+    }
+    Object.keys(TITLES_MAP).forEach((key) => {
+      if (key == props.location.pathname) {
+        setState({ ...state, title: TITLES_MAP[key] });
+        return
+      }
+    });
+    // let title = props.location.pathname.split("/").reverse()[0];
+    // title = title.charAt(0).toUpperCase() + title.slice(1);
+    // setState({ ...state, title }); //get the last string of http path
+  };
 
-  render() {
-    let {isFull} = this.state;
-    let { user } = this.props.userInfo;
-    return (
-      <header className="header">
-        <div className="header-top">
-          <Button size="small" onClick={this.fullScreen}>
-            {isFull ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-          </Button>
+  return (
+    <header className="header">
+      <div className="header-top">
+        <Button size="small" onClick={fullScreen}>
+          {state.isFull ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+        </Button>
 
-          <span className="username">Welcome {user.username}</span>
-          <Button type="link" size="small" onClick={this.showConfirm}>
-            Logout
-          </Button>
+        <span className="username">Welcome {props.userInfo.user.username}</span>
+        <Button type="link" size="small" onClick={showConfirm}>
+          Logout
+        </Button>
+      </div>
+      <div className="header-bottom">
+        <div className="header-bottom-left">
+          {props.title || state.title}
+          {/* {this.props.location.pathname} */}
         </div>
-        <div className="header-bottom">
-          <div className="header-bottom-left">
-            {this.props.title || this.state.title}
-            {/* {this.props.location.pathname} */}
-            </div>
-          <div className="header-bottom-right">{this.state.date}</div>
-        </div>
-      </header>
-    );
-  }
+        <div className="header-bottom-right">{state.date}</div>
+      </div>
+    </header>
+  );
 }
-export default Header;
+
+export default connect(
+  (state) => ({
+    userInfo: state.userInfo,
+    title: state.title,
+  }),
+  { deleteUser: createDeleteUserInfoAction }
+)(withRouter(Header));

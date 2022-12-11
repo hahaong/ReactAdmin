@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
-import { getFirestore} from 'firebase/firestore/lite';
+import { getFirestore } from 'firebase/firestore/lite';
 // import { getAnalytics } from "firebase/analytics";
 
 
@@ -26,3 +26,9 @@ export const storage = getStorage(app);
 export const db = getFirestore(app)
 export const BASE_URL = 'http://localhost:3000'
 export const PAGE_SIZE = 5
+export const TITLES_MAP = {
+  "/admin/home": "Home",
+  "/admin/registration": "Registration",
+  "/admin/management/category": "Category",
+  "/admin/management/person": "Person",
+} 

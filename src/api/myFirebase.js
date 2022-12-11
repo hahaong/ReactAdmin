@@ -1,6 +1,7 @@
 import { message } from 'antd'
 import {
     collection,
+    getDoc,
     getDocs,
     doc,
     setDoc,
@@ -16,6 +17,8 @@ import {
     startAt,
     endAt
 } from "firebase/firestore/lite";
+
+import dayjs from "dayjs";
 
 import { db, PAGE_SIZE } from "../config"
 
@@ -42,7 +45,17 @@ export const searchDocument = async (col, target, data) => {
         let myCollection = collection(db, col);
         let myQuery = query(myCollection, where(target, "==", data))
         let result = await getDocs(myQuery)
-        console.log(result)
+        return result
+    } catch (error) {
+        message.error(error.message, 5)
+        return new Promise(() => { })
+    }
+}
+
+export const searchDocumentById = async (col, id) => {
+    try {
+        let myDoc = doc(db, col, id);
+        let result = await getDoc(myDoc)
         return result
     } catch (error) {
         message.error(error.message, 5)
@@ -56,7 +69,6 @@ export const checkDuplication = async (col, target, data) => {
         let myCollection = collection(db, col);
         let myQuery = query(myCollection, where(target, "==", data))
         let result = await getDocs(myQuery)
-        console.log(result)
         if (!result.empty) {
             message.warning('Same data exists, please try again', 5)
             return new Promise(() => { })
@@ -79,13 +91,13 @@ export const addDocument = async (col, data) => {
 }
 
 
-export const updateDocument = async (col, id, target, data) => {
+export const updateDocument = async (col, id, fields) => {
     try {
         const myDoc = doc(db, col, id)
-        const newFields = { [target]: data }
-        let result = await updateDoc(myDoc, newFields)
+        let result = await updateDoc(myDoc, fields)
         return result
     } catch (error) {
+        console.log(error)
         message.error(error.message, 5)
         return new Promise(() => { })
     }
@@ -123,10 +135,15 @@ export const pagination = async (col, target, currentPageNum, searchType = "", k
         let resultSize
         if (keyword == "") {
             total = await getCount(query(collection(db, col)))
-            myQuery = query(collection(db, col), orderBy(target), limit(requestDataNumber))
+            myQuery = query(collection(db, col), orderBy(target, "desc"), limit(requestDataNumber))
             total = total.data().count
             result = await getDocs(myQuery);
             resultSize = result.size
+            // result.forEach((item) => {
+            //     console.log({
+            //         ...item.data(), createdAt: dayjs(item.data().createdAt.toDate()).format("YYYY-MM-DD HH:mm:ss")
+            //     })
+            // })
         }
 
         else {
@@ -135,12 +152,16 @@ export const pagination = async (col, target, currentPageNum, searchType = "", k
             total = total.data().count
             myQuery = query(collection(db, col), orderBy(searchType), startAt(keyword), endAt(keyword), limit(requestDataNumber))
             result = await getDocs(myQuery);
-            resultSize = result.size
         }
 
-        if(resultSize == 0){
+        if (result.empty) {
             message.warning('Data not found, please try again', 5)
-            return new Promise(() => { })
+            return {
+                currentPageData: [],
+                currentPageNumber: currentPageNum,
+                totalPageNumber: 0
+            }
+            // return new Promise(() => { })
         }
 
         let currentPageInfo = (resultSize % PAGE_SIZE == 0) ?
