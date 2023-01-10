@@ -64,20 +64,24 @@ export default function Home() {
   const [carparkData, setCarparkData] = React.useState([]);
   const [categoryList, setCategoryList] = React.useState([]);
 
+  const [searchType, setSearchType] = React.useState("carPlate");
+  const [categorySearchType, setCategorySearchType] =
+    React.useState("UNAUTHORIZED");
+  const [enterOrExitSearchType, setEnterOrExitSearchType] =
+    React.useState("exit");
+
   const [basicOrAdvanceSearch, setBasicOrAdvanceSearch] =
     React.useState("basic");
 
-  const [keyword, setKeyword] = React.useState("");
+  const [searchKeyword, setSearchKeyword] = React.useState("");
   const [displayNumber, setDisplayNumber] = React.useState(5);
-  const [displayRecentSixMonth, setDisplayRecentSixMonth] = React.useState([]);
-  const [displayCurrentMonth, setDisplayCurrentMonth] = React.useState();
 
   const [currentPageNumber, setcurrentPageNumber] = React.useState(1);
-  const [test1, setTest1] = React.useState(1);
+  const [collectedFormData, setCollectedFormData] = React.useState();
 
-  
   const dateFormat = "YYYY-MM-DD";
   const [form] = Form.useForm();
+  const [basicSearchform] = Form.useForm();
 
   React.useEffect(() => {
     form.setFieldValue("date", [
@@ -86,11 +90,9 @@ export default function Home() {
     ]);
     // form.setFieldValue("name", "ONGREAL");
     form.setFieldValue("carPlate", "QQQ2357");
+    getCategoryList(); // set filter category selection
 
-    getCategoryList();
     getCarparkList();
-   
-
     // setDisplayRecentSixMonth([
     //   ...allMonth.slice(startIndex, currentMonth),
     // ]);
@@ -112,10 +114,6 @@ export default function Home() {
     setOpenFilterDrawer(false);
   };
 
-  const testfunc =  async() =>{
-    console.log(test1)
-  }
-
   const getCarparkList = async (
     pageNumber = currentPageNumber,
     pageDataCount = displayNumber
@@ -129,7 +127,7 @@ export default function Home() {
       result;
     console.log(isMore);
 
-// boundary
+    // boundary
 
     let resultList = currentPageData.map(async (doc) => {
       const { carPlate, image, ownerID, createdAt, enterOrExit } = doc.data();
@@ -137,7 +135,7 @@ export default function Home() {
         key: doc.id,
         carPlate: carPlate,
         image: image,
-        enterOrExit:enterOrExit,
+        enterOrExit: enterOrExit,
         ownerID: ownerID ? ownerID : {},
         createdAtTimeStamp: createdAt,
         createdAt: dayjs(createdAt.toDate()).format("YYYY-MM-DD HH:mm:ss"),
@@ -192,12 +190,12 @@ export default function Home() {
         key: doc.id,
         categoryName: doc.data().category,
       }));
-      resultList.push({ key: "unauthorized", categoryName: "UNAUTHORIZED" });
+      resultList.push({ key: "UNAUTHORIZED", categoryName: "UNAUTHORIZED" });
       setCategoryList(resultList.reverse());
     }
   };
 
-  const onLoadMore = async () => {
+  const onLoadMore = () => {
     setcurrentPageNumber(currentPageNumber + 1);
     setLoading(true); //when loading is true, the "loading more" button is hidden
     setCarparkList(
@@ -214,10 +212,13 @@ export default function Home() {
         }))
       )
     );
+
     console.log("currentPageNumber:", currentPageNumber + 1);
     console.log("displayNumber:" + displayNumber);
 
-    await getCarparkList(currentPageNumber + 1);
+    basicOrAdvanceSearch == "basic"
+      ? getCarparkList(currentPageNumber + 1)
+      : advanceSearch(collectedFormData, currentPageNumber + 1);
   };
 
   const loadMore =
@@ -234,38 +235,56 @@ export default function Home() {
       </div>
     ) : null;
 
-  const onFinish = async (values) => {
+  const onBasicSearchFinish = (values) => {
+    console.log(values);
+  };
+  const onBasicSearchFinishFailed = (values) => {
+    console.log(values);
+  };
 
-    setTest1(2);
-    testfunc()
-    
+  const onFinish = (values) => {
+    setBasicOrAdvanceSearch("advance");
     let collectedFormData = {
       ...values,
       startDate: values.date[0].$d,
       endDate: values.date[1].$d,
     };
+    setCollectedFormData(collectedFormData);
+    advanceSearch(collectedFormData);
+  };
 
-    console.log("state basic or advance:" + basicOrAdvanceSearch);
-    // FilterDrawerOnClose()
-    // reqCarparkListWithinDate()
+  const onFinishFailed = (errorInfo) => {
+    console.log("Failed:", errorInfo);
+  };
 
-    console.log("Success:", collectedFormData);
-    let size = Object.keys(collectedFormData).length;
-    console.log("Success size:", size);
-
-    console.log("Date1:", collectedFormData.startDate);
-    console.log("Date2:", collectedFormData.endDate);
-
-    // console.log("category of carPlate" :)
-
-    // need to create a array to append according to number of field
+  const advanceSearch = async (
+    collectedFormData,
+    pageNumber = currentPageNumber,
+    pageDataCount = displayNumber
+  ) => {
+    console.log(collectedFormData);
     let searchPersonConstraint = [
-      { formsearchData: "name", operator: "==", databasesearchData:"name" , data: collectedFormData.name},
-      { formsearchData: "phoneNumber", operator: "==", databasesearchData:"phoneNumber" , data: collectedFormData.phoneNumber},
-      { formsearchData: "category", operator: "==", databasesearchData:"category", data: collectedFormData.category },
+      {
+        formsearchData: "name",
+        operator: "==",
+        databasesearchData: "name",
+        data: collectedFormData.name,
+      },
+      {
+        formsearchData: "phoneNumber",
+        operator: "==",
+        databasesearchData: "phoneNumber",
+        data: collectedFormData.phoneNumber,
+      },
+      {
+        formsearchData: "category",
+        operator: "==",
+        databasesearchData: "category",
+        data: collectedFormData.category,
+      },
     ];
 
-    console.log(searchPersonConstraint)
+    console.log(searchPersonConstraint);
 
     let searchPersonData = [];
     searchPersonConstraint.forEach((obj) => {
@@ -278,10 +297,10 @@ export default function Home() {
       }
     });
 
-    console.log(searchPersonData)
+    console.log(searchPersonData);
     let resultPersonListId = [];
     let resultPersonList = [];
-    if(searchPersonData.length != 0){
+    if (searchPersonData.length != 0) {
       resultPersonList = await reqSearchPerson(searchPersonData);
     }
 
@@ -293,47 +312,75 @@ export default function Home() {
 
     // need to create a array to append according to number of field
     let searchCarParkConstraint = [
-      { formsearchData: "carPlate", operator: "==" , databasesearchData:"carPlate" , data:collectedFormData.carPlate},
-      { formsearchData: "enterOrExit", operator: "==" , databasesearchData:"enterOrExit" , data:collectedFormData.enterOrExit},
-      { formsearchData: "owner", operator: "in" , databasesearchData:"ownerID" , data:resultPersonListId},
-      { formsearchData: "startDate", operator: ">=" , databasesearchData:"createdAt" , data:collectedFormData.startDate},
-      { formsearchData: "endDate", operator: "<=" , databasesearchData:"createdAt" , data:collectedFormData.endDate},
+      {
+        formsearchData: "carPlate",
+        operator: "==",
+        databasesearchData: "carPlate",
+        data: collectedFormData.carPlate,
+      },
+      {
+        formsearchData: "enterOrExit",
+        operator: "==",
+        databasesearchData: "enterOrExit",
+        data: collectedFormData.enterOrExit,
+      },
+      {
+        formsearchData: "owner",
+        operator: "in",
+        databasesearchData: "ownerID",
+        data: resultPersonListId,
+      },
+      {
+        formsearchData: "startDate",
+        operator: ">=",
+        databasesearchData: "createdAt",
+        data: collectedFormData.startDate,
+      },
+      {
+        formsearchData: "endDate",
+        operator: "<=",
+        databasesearchData: "createdAt",
+        data: collectedFormData.endDate,
+      },
     ];
     let searchCarParkData = [];
-    console.log(searchCarParkConstraint[2].data)
+    console.log(searchCarParkConstraint[2].data);
 
     searchCarParkConstraint.forEach((obj) => {
-      if ((typeof obj.data !== "undefined") && (resultPersonListId instanceof Array ? obj.data.length != 0 : 1)) {
+      if (
+        typeof obj.data !== "undefined" &&
+        (resultPersonListId instanceof Array ? obj.data.length != 0 : 1)
+      ) {
         searchCarParkData.push({
-          searchData: obj.databasesearchData,
+          target: obj.databasesearchData,
           operator: obj.operator,
           data: obj.data,
         });
       }
     });
 
-    console.log(searchCarParkData)
+    console.log(searchCarParkData);
 
     const result = await reqCarparkList({
-      currentPageNumber:1,
-      displayNumber,
+      currentPageNumber: pageNumber,
+      pageSize: pageDataCount,
       basicOrAdvanceSearch,
-      searchCarParkData
+      searchCarParkData,
     });
-    
-    let { currentPageData, currentPageNumber, totalDataCount, isMore } =result;
-    console.log(currentPageData)
+
+    let { currentPageData, currentPageNumber, totalDataCount, isMore } = result;
+    console.log(currentPageData);
     currentPageData.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
     });
 
     let resultList = currentPageData.map(async (doc) => {
-      const { carPlate, image, ownerID, createdAt,enterOrExit } = doc.data();
+      const { carPlate, image, ownerID, createdAt, enterOrExit } = doc.data();
       let record = {
         key: doc.id,
         carPlate: carPlate,
         image: image,
-        enterOrExit:enterOrExit,
+        enterOrExit: enterOrExit,
         ownerID: ownerID ? ownerID : {},
         createdAtTimeStamp: createdAt,
         createdAt: dayjs(createdAt.toDate()).format("YYYY-MM-DD HH:mm:ss"),
@@ -341,88 +388,159 @@ export default function Home() {
       };
       return record;
     });
-
-
-    // let localCarparkList = [];
-    // resultCarParkList.forEach((doc) => {
-    //   localCarparkList.push({ key: doc.id, ...doc.data() });
-    //   console.log(doc.id, " => ", doc.data());
-    // });
-    // console.log(localCarparkList);
-    // setCarparkList([...localCarparkList]);
-  };
-  const onFinishFailed = (errorInfo) => {
-    console.log("Failed:", errorInfo);
+    console.log(resultList);
+    let localCarparkList = [];
+    for (var i = 0; i < resultList.length; i++) {
+      let record = await resultList[i];
+      localCarparkList.push(record);
+    }
+    console.log(localCarparkList);
+    setCarparkList([...localCarparkList]);
+    setCarparkData([...localCarparkList]);
+    setInitLoading(false);
+    setLoading(!isMore); //true or false
+    console.log("isMore:", isMore);
   };
 
   return (
     <div className="site-card-border-less-wrapper">
       <Card
         title={
-          <div>
-            <Select
-              placeholder="List number"
-              style={{
-                width: "20%",
-              }}
-              onChange={(value) => {
-                setDisplayNumber(value);
-              }}
-              options={[
-                {
-                  value: 5,
-                  label: "5",
-                },
-                {
-                  value: 10,
-                  label: "10",
-                },
-                {
-                  value: 50,
-                  label: "50",
-                },
-                {
-                  value: 100,
-                  label: "100",
-                },
-              ]}
-            />
+          <Form
+            // style={{ display: "flex" }}
+            layout="inline"
+            form={basicSearchform}
+            onFinish={onBasicSearchFinish}
+            onFinishFailed={onBasicSearchFinishFailed}
+            autoComplete="off"
+            onValuesChange={({ listNumber, searchByType, searchByData }) => {
+              if (listNumber) {
+                console.log(listNumber);
+                setDisplayNumber(listNumber);
+              }
 
-            <Select
-              placeholder="Month"
-              style={{
-                width: "20%",
-              }}
-              onChange={(value) => {
-                setDisplayNumber(value);
-              }}
-              options={[
-                ...displayRecentSixMonth,
-                { value: "all", label: "All" },
-              ]}
-            />
-            <Input
-              placeholder="Please enter Car Plate to search"
-              style={{ margin: "0 10px", width: "40%" }}
-              allowClear
-              onChange={(obj) => {
-                setKeyword(obj.searchData.value.toUpperCase());
-                if (obj.searchData.value == "") {
-                  // getPersonList(1, "");
-                }
-              }}
-              value={keyword}
-            />
-            <Button
-              type="primary"
-              onClick={() => {
-                // getPersonList();
-              }}
-              icon={<SearchOutlined />}
-            >
-              Search
-            </Button>
-          </div>
+              if (searchByType == "carPlate") {
+                basicSearchform.setFieldValue("searchByData", "");
+              }
+
+              if (searchByType == "category") {
+                basicSearchform.setFieldValue("searchByData", "UNAUTHORIZED");
+              }
+
+              if (searchByType == "enterOrExit") {
+                basicSearchform.setFieldValue("searchByData", "Enter");
+              }
+            }}
+          >
+            <Form.Item name="listNumber" style={{ width: "200px" }}>
+              <Select
+                placeholder="List number"
+                options={[
+                  {
+                    value: 5,
+                    label: "5",
+                  },
+                  {
+                    value: 10,
+                    label: "10",
+                  },
+                  {
+                    value: 50,
+                    label: "50",
+                  },
+                  {
+                    value: 100,
+                    label: "100",
+                  },
+                ]}
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <Input.Group compact>
+                <Form.Item name={"searchByType"} noStyle>
+                  <Select
+                    defaultValue="Search by Car Plate"
+                    onChange={(value) => {
+                      setSearchType(value);
+                    }}
+                    style={{ width: "200px" }}
+                    options={[
+                      {
+                        value: "carPlate",
+                        label: "Search by Car Plate",
+                      },
+                      {
+                        value: "category",
+                        label: "Search by Category",
+                      },
+                      {
+                        value: "enterOrExit",
+                        label: "Search by Enter Or Exit",
+                      },
+                    ]}
+                  />
+                </Form.Item>
+
+                <Form.Item name={"searchByData"} noStyle>
+                  {searchType == "carPlate" ? (
+                    <Input
+                      style={{ width: "300px" }}
+                      placeholder="Please enter car plate to search"
+                      allowClear
+                      // onChange={(obj) => {
+                      //   setSearchKeyword(obj.target.value.toUpperCase());
+                      //   setKeyword(obj.searchData.value.toUpperCase());
+                      //   if (obj.searchData.value == "") {
+                      //   }
+                      // }}
+                      value={searchKeyword}
+                    />
+                  ) : searchType == "category" ? (
+                    <Select
+                      // defaultValue="E"
+                      // style={{ width: "30%" }}
+                      // onChange={(value) => {
+                      //   setCategorySearchType(value);
+                      // }}
+                      defaultValue="LECTURER"
+                      placeholder="Please select your category"
+                      style={{ width: "300px" }}
+                    >
+                      {categoryList.map((obj) => (
+                        <Option key = {obj.key} value={obj.categoryName}>{obj.categoryName}</Option>
+                      ))}
+                    </Select>
+                  ) : searchType == "enterOrExit" ? (
+                    <Select
+                      // defaultValue="Enter"
+                      // style={{ width: "70%" }}
+                      // onChange={(value) => {
+                      //   setEnterOrExitSearchType(value);
+                      // }}
+                      style={{ width: "300px" }}
+                    >
+                      <Option value="Enter">Enter</Option>
+                      <Option value="Exit">Exit</Option>
+
+                    </Select>
+                  ) : (
+                    <></>
+                  )}
+                </Form.Item>
+
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    // getPersonList();
+                  }}
+                  icon={<SearchOutlined />}
+                >
+                  Search
+                </Button>
+              </Input.Group>
+            </Form.Item>
+          </Form>
         }
         extra={
           <Button
@@ -578,21 +696,20 @@ export default function Home() {
               form.setFieldsValue({
                 name: obj.name.toUpperCase(),
               });
-
             }
           }}
         >
           <Row>
             <Col span={24}>
               <Form.Item name="carPlate" label="Car Plate">
-                <Input placeholder="Please enter car plate number" allowClear/>
+                <Input placeholder="Please enter car plate number" allowClear />
               </Form.Item>
             </Col>
           </Row>
           <Row>
             <Col span={24}>
               <Form.Item name="name" label="Name">
-                <Input placeholder="Please enter owner name" allowClear/>
+                <Input placeholder="Please enter owner name" allowClear />
               </Form.Item>
             </Col>
           </Row>
@@ -614,16 +731,20 @@ export default function Home() {
           </Row>
           <Row>
             <Col span={24}>
-              <Form.Item name="phoneNumber" label="Phone Number"
-              rules={[
-                {
-                  pattern: /^[0-9]+$/,
-                  message:
-                    "Phone Number must be composed of numbers",
-                },
-              ]}
+              <Form.Item
+                name="phoneNumber"
+                label="Phone Number"
+                rules={[
+                  {
+                    pattern: /^[0-9]+$/,
+                    message: "Phone Number must be composed of numbers",
+                  },
+                ]}
               >
-                <Input placeholder="Please enter owner phone number" allowClear/>
+                <Input
+                  placeholder="Please enter owner phone number"
+                  allowClear
+                />
               </Form.Item>
             </Col>
           </Row>

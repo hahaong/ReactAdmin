@@ -21,7 +21,7 @@ const Person = (props) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [personList, setPersonList] = React.useState([]);
   const [currentPageNumber, setCurrentPageNumber] = React.useState("1");
-  const [totalPageNumber, setTotalPageNumber] = React.useState("");
+  const [totalDataCount, setTotalDataCount] = React.useState("");
   const [keyword, setKeyword] = React.useState("");
   const [searchType, setSearchType] = React.useState("name");
 
@@ -51,16 +51,16 @@ const Person = (props) => {
     } else {
       result = await reqPersonList(currentPage);
     }
-    let { currentPageData, currentPageNumber, totalPageNumber } = result;
+    let { currentPageData, currentPageNumber, totalDataCount } = result;
 
     let resultList = currentPageData.map(async (doc) => {
       return {
         key: doc.id,
         name: doc.data().name,
-        carplate: doc.data().carplate,
-        phonenumber: doc.data().phonenumber,
-        category: doc.data().type,
-        categoryName: await getCategoryById(doc.data().type),
+        carPlate: doc.data().carPlate,
+        phoneNumber: doc.data().phoneNumber,
+        category: doc.data().category,
+        categoryName: await getCategoryById(doc.data().category),
         detail : doc.data().detail,
         registeredAt: dayjs(doc.data().createdAt.toDate()).format(
           "YYYY-MM-DD HH:mm:ss"
@@ -75,7 +75,7 @@ const Person = (props) => {
     }
     setPersonList([...localPersonList]);
     setCurrentPageNumber(currentPageNumber);
-    setTotalPageNumber(totalPageNumber);
+    setTotalDataCount(totalDataCount);
 
     //Save the item array to redux
     props.savePerson(localPersonList);
@@ -86,8 +86,8 @@ const Person = (props) => {
   const getCategoryById = async (id) => {
     let result = await reqCategoryById(id);
     if (result.exists()) {
-      const { type } = result.data();
-      return type;
+      const { category } = result.data();
+      return category;
     } else {
       message.warning("Connection to database failed");
     }
@@ -101,14 +101,14 @@ const Person = (props) => {
     },
     {
       title: "Car Plate",
-      dataIndex: "carplate",
-      key: "carplate",
+      dataIndex: "carPlate",
+      key: "carPlate",
     },
     {
       title: "Phone No",
-      dataIndex: "phonenumber",
-      key: "phonenumber",
-      render: (phonenumber) => phonenumber,
+      dataIndex: "phoneNumber",
+      key: "phoneNumber",
+      render: (phoneNumber) => phoneNumber,
     },
     {
       title: "Category",
@@ -191,11 +191,11 @@ const Person = (props) => {
                   label: "Search by Name",
                 },
                 {
-                  value: "carplate",
-                  label: "Search by Carplate",
+                  value: "carPlate",
+                  label: "Search by Car Plate",
                 },
                 {
-                  value: "phonenumber",
+                  value: "phoneNumber",
                   label: "Search by Phone No",
                 },
               ]}
@@ -244,7 +244,7 @@ const Person = (props) => {
           bordered
           rowKey="key"
           pagination={{
-            total: totalPageNumber,
+            total: totalDataCount,
             current: currentPageNumber,
             pageSize: PAGE_SIZE,
             onChange: (value) => getPersonList(value)

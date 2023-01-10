@@ -42,7 +42,7 @@ export default class RichTextEditor extends Component {
           editorStyle={{
             border:"1px solid black",
             paddingLeft:"10px",
-            lineHeight:"10px",
+            // lineHeight:"10px",
             minHeight:"200px"
           }}
           onEditorStateChange={this.onEditorStateChange}

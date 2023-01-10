@@ -32,7 +32,7 @@ export const getDocuments = async (col) => {
             message.warning('The database is empty', 5)
             return new Promise(() => { })
         }
-        return result
+        return result.docs
     } catch (error) {
         console.log(error.message)
         message.error(error.message, 5)
@@ -40,11 +40,67 @@ export const getDocuments = async (col) => {
     }
 }
 
+
+export const searchDocumentAdvance = async ({ col, searchData }) => {
+    console.log(searchData)
+    console.log(searchData.length)
+
+    try {
+        let myCollection = collection(db, col);
+        let myQuery;
+        if (searchData.length == 0) {
+            throw new Error('Search Data is Empty');
+        }
+        if (searchData.length == 1) {
+            myQuery = query(myCollection,
+                where(searchData[0].target, searchData[0].operator, searchData[0].data))
+        } else if (searchData.length == 2) {
+            myQuery = query(myCollection,
+                where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                where(searchData[1].target, searchData[1].operator, searchData[1].data))
+        } else if (searchData.length == 3) {
+            myQuery = query(myCollection,
+                where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                where(searchData[1].target, searchData[1].operator, searchData[1].data),
+                where(searchData[2].target, searchData[2].operator, searchData[2].data))
+        }
+
+        let result = await getDocs(myQuery)
+        console.log(result)
+        return result
+        // return result.docs  OngLipWei in future will change to this
+    } catch (error) {
+        message.error(error.message, 5)
+        return new Promise(() => { })
+    }
+}
+
+
+//not robust
 export const searchDocument = async (col, target, data) => {
     try {
         let myCollection = collection(db, col);
         let myQuery = query(myCollection, where(target, "==", data))
         let result = await getDocs(myQuery)
+        return result
+        // return result.docs  OngLipWei in future will change to this
+    } catch (error) {
+        message.error(error.message, 5)
+        return new Promise(() => { })
+    }
+}
+
+
+export const searchDocumentWithinDate = async (col, target, date1, date2) => {
+    try {
+        let myCollection = collection(db, col);
+        let myQuery = query(myCollection, where(target, ">=", date1), where(target, "<=", date2))
+        let result = await getDocs(myQuery)
+        result.forEach((doc) => {
+            console.log(doc.id, " => ", doc.data());
+        });
+        // console.log(result)
+        // console.log(result.docs)
         return result
     } catch (error) {
         message.error(error.message, 5)
@@ -55,13 +111,17 @@ export const searchDocument = async (col, target, data) => {
 export const searchDocumentById = async (col, id) => {
     try {
         let myDoc = doc(db, col, id);
+
+        // let myDoc = doc(db, col, "1MhNyElGxdaf05VZkMRK");
         let result = await getDoc(myDoc)
+        // console.log(result.data())
         return result
     } catch (error) {
         message.error(error.message, 5)
         return new Promise(() => { })
     }
 }
+
 
 
 export const checkDuplication = async (col, target, data) => {
@@ -125,15 +185,15 @@ export const getTotalCount = async (col) => {
     }
 }
 
-//currentPageNum and totalPageNumber is important to do number pagination
-export const pagination = async (col, target, currentPageNum, searchType = "", keyword = "") => {
+//currentPageNum and totalDataCount is important to do number pagination
+export const pagination = async (col, target, currentPageNum, orderType = "", keyword = "", pageSize = PAGE_SIZE) => {
     try {
-        let requestDataNumber = currentPageNum * PAGE_SIZE
+        let requestDataNumber = currentPageNum * pageSize
         let total
         let myQuery
         let result
         let resultSize
-        if (keyword == "") {
+        if (keyword == "") { //no need go to search by keyword
             total = await getCount(query(collection(db, col)))
             myQuery = query(collection(db, col), orderBy(target, "desc"), limit(requestDataNumber))
             total = total.data().count
@@ -146,12 +206,13 @@ export const pagination = async (col, target, currentPageNum, searchType = "", k
             // })
         }
 
-        else {
+        else { //search by keyword
             // console.log("myFirebase Search function...")
-            total = await getCount(query(collection(db, col), orderBy(searchType), startAt(keyword)))
+            total = await getCount(query(collection(db, col), orderBy(orderType), startAt(keyword)))
             total = total.data().count
-            myQuery = query(collection(db, col), orderBy(searchType), startAt(keyword), endAt(keyword), limit(requestDataNumber))
+            myQuery = query(collection(db, col), orderBy(orderType), startAt(keyword), endAt(keyword), limit(requestDataNumber))
             result = await getDocs(myQuery);
+            resultSize = result.size
         }
 
         if (result.empty) {
@@ -159,22 +220,179 @@ export const pagination = async (col, target, currentPageNum, searchType = "", k
             return {
                 currentPageData: [],
                 currentPageNumber: currentPageNum,
-                totalPageNumber: 0
+                totalDataCount: 0
             }
             // return new Promise(() => { })
         }
 
-        let currentPageInfo = (resultSize % PAGE_SIZE == 0) ?
+        let currentPageInfo = (resultSize % pageSize == 0) ?
             {
-                currentPageData: result.docs.splice(-PAGE_SIZE),
+                currentPageData: result.docs.splice(-pageSize),
                 currentPageNumber: currentPageNum,
-                totalPageNumber: total
+                totalDataCount: total
             } : {
-                currentPageData: result.docs.splice(-(resultSize % PAGE_SIZE)),
+                currentPageData: result.docs.splice(-(resultSize % pageSize)),
                 currentPageNumber: currentPageNum,
-                totalPageNumber: total
+                totalDataCount: total
             }
         // console.log("target", target)
+        // console.log("currentPageNum", currentPageNum)
+        // console.log("requestDataNumber", requestDataNumber)
+        // console.log("orderType", orderType)
+        // console.log("keyword", keyword)
+        // console.log("total", total)
+        // console.log("result", result)
+        // console.log("resultSize", resultSize)
+        // console.log("pageSize", pageSize)
+        // console.log("currentPageInfo", currentPageInfo)
+        return currentPageInfo
+    } catch (error) {
+        message.error(error.message, 5)
+        return new Promise(() => { })
+    }
+}
+
+//onglipwei implemnt [1,1,1]
+export const scrollPagination = async ({ col, orderTarget, currentPageNumber, basicOrAdvanceSearch = "", orderType = "", searchData = [], pageSize = PAGE_SIZE }) => {
+    console.log(basicOrAdvanceSearch)
+    console.log(searchData)
+    console.log(searchData.length ? searchData[0].target : "empty")
+
+    try {
+        let requestDataNumber = currentPageNumber * pageSize
+        let total
+        let myQuery
+        let result
+        let resultSize
+
+
+        if (basicOrAdvanceSearch == "basic") {
+            if (!searchData.length) { //no need go to search by keyword
+                total = await getCount(query(collection(db, col)))
+                total = total.data().count
+                myQuery = query(collection(db, col), orderBy(orderTarget, "desc"), limit(requestDataNumber))
+                result = await getDocs(myQuery);
+                resultSize = result.size
+                
+                console.log("firebase currentPageNumber:", currentPageNumber)
+                console.log("firebase pageSize:", pageSize)
+                console.log("firebase requestDataNumber:", requestDataNumber)
+                console.log("firebase Total:", total)
+                console.log("firebase resultSize:", resultSize)
+
+                // result.forEach((item) => {
+                //     console.log({
+                //         ...item.data(), createdAt: dayjs(item.data().createdAt.toDate()).format("YYYY-MM-DD HH:mm:ss")
+                //     })
+                // })
+            }
+
+            else { //search by keyword
+                // console.log("myFirebase Search function...")
+                total = await getCount(query(collection(db, col), where(searchData[0].target, searchData[0].operator, searchData[0].data)))
+                total = total.data().count
+                myQuery = query(collection(db, col), where(searchData[0].target, searchData[0].operator, searchData[0].data), limit(requestDataNumber), orderBy(orderType))
+                result = await getDocs(myQuery);
+                resultSize = result.size
+            }
+        } else if (basicOrAdvanceSearch == "advance") {
+            switch (searchData.length) {
+                case 1:
+                    total = await getCount(query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data)))
+                    total = total.data().count
+
+                    myQuery = query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data), orderBy(orderTarget, "desc"), limit(requestDataNumber))
+                    break;
+                case 2:
+                    console.log("in case 2")
+                    total = await getCount(query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                        where(searchData[1].target, searchData[1].operator, searchData[1].data)))
+                    total = total.data().count
+
+                    myQuery = query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                        where(searchData[1].target, searchData[1].operator, searchData[1].data), orderBy(orderTarget, "desc"), limit(requestDataNumber)
+                    )
+                    break;
+                case 3:
+                    console.log("in case 3")
+                    console.log(searchData)
+                    console.log(searchData[0]['target'])
+                    total = await getCount(query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                        where(searchData[1].target, searchData[1].operator, searchData[1].data),
+                        where(searchData[2].target, searchData[2].operator, searchData[2].data)))
+                    total = total.data().count
+
+                    myQuery = query(collection(db, col),
+                        where(searchData[0]['target'], searchData[0]['operator'], searchData[0]['data']),
+                        where(searchData[1]['target'], searchData[1]['operator'], searchData[1]['data']),
+                        where(searchData[2]['target'], searchData[2]['operator'], searchData[2]['data']), orderBy(orderTarget, "desc"), limit(requestDataNumber)
+                    )
+                    break;
+                case 4:
+                    total = await getCount(query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                        where(searchData[1].target, searchData[1].operator, searchData[1].data),
+                        where(searchData[2].target, searchData[2].operator, searchData[2].data),
+                        where(searchData[3].target, searchData[3].operator, searchData[3].data)
+                    ))
+                    total = total.data().count
+
+                    myQuery = query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                        where(searchData[1].target, searchData[1].operator, searchData[1].data),
+                        where(searchData[2].target, searchData[2].operator, searchData[2].data),
+                        where(searchData[3].target, searchData[3].operator, searchData[3].data), orderBy(orderTarget, "desc"), limit(requestDataNumber)
+                    )
+                    break;
+                case 5:
+                    total = await getCount(query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                        where(searchData[1].target, searchData[1].operator, searchData[1].data),
+                        where(searchData[2].target, searchData[2].operator, searchData[2].data),
+                        where(searchData[3].target, searchData[3].operator, searchData[3].data),
+                        where(searchData[4].target, searchData[4].operator, searchData[4].data)
+                    ))
+                    total = total.data().count
+
+                    myQuery = query(collection(db, col),
+                        where(searchData[0].target, searchData[0].operator, searchData[0].data),
+                        where(searchData[1].target, searchData[1].operator, searchData[1].data),
+                        where(searchData[2].target, searchData[2].operator, searchData[2].data),
+                        where(searchData[3].target, searchData[3].operator, searchData[3].data),
+                        where(searchData[4].target, searchData[4].operator, searchData[4].data), orderBy(orderTarget, "desc"), limit(requestDataNumber)
+                    )
+                    break;
+            }
+            result = await getDocs(myQuery);
+            resultSize = result.size
+        }
+
+
+        if (result.empty) {
+            message.warning('Data not found, please try again', 5)
+            return {
+                currentPageData: [],
+                currentPageNumber,
+                totalDataCount: 0,
+                isMore: false
+            }
+            // return new Promise(() => { })
+        }
+
+        let currentPageInfo = {
+            currentPageData: result.docs,
+            currentPageNumber,
+            totalDataCount: total,
+            isMore: !(resultSize === total)
+        }
+
+        console.log(currentPageInfo)
+        // console.log("orderTarget", orderTarget)
         // console.log("currentPageNum", currentPageNum)
         // console.log("requestDataNumber", requestDataNumber)
         // console.log("searchType", searchType)
@@ -182,10 +400,11 @@ export const pagination = async (col, target, currentPageNum, searchType = "", k
         // console.log("total", total)
         // console.log("result", result)
         // console.log("resultSize", resultSize)
-        // console.log("PAGE_SIZE", PAGE_SIZE)
+        // console.log("pageSize", pageSize)
         // console.log("currentPageInfo", currentPageInfo)
         return currentPageInfo
     } catch (error) {
+        console.error(error.message)
         message.error(error.message, 5)
         return new Promise(() => { })
     }

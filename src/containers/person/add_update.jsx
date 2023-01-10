@@ -19,13 +19,13 @@ const AddUpdate = (props) => {
   const [categoryList, setCategoryList] = React.useState([]);
   const [operationType, setOperationType] = React.useState("add");
   const [personId, setPersonId] = React.useState("");
-  const [myName, setName] = React.useState("111");
-  const [carplate, setCarplate] = React.useState("");
-  const [phonenumber, setPhonenumber] = React.useState("");
-  const [category, setCategory] = React.useState("");
-  const [categoryName, setCategoryName] = React.useState("");
-  const [registeredAt, setRegisteredAt] = React.useState("");
-  const [detail, setDetail] = React.useState("");
+  // const [myName, setName] = React.useState("111");
+  // const [carPlate, setcarPlate] = React.useState("");
+  // const [phoneNumber, setPhonenumber] = React.useState("");
+  // const [category, setCategory] = React.useState("");
+  // const [categoryName, setCategoryName] = React.useState("");
+  // const [registeredAt, setRegisteredAt] = React.useState("");
+  // const [detail, setDetail] = React.useState("");
 
   const richTextEditor = React.useRef(null);
 
@@ -49,26 +49,26 @@ const AddUpdate = (props) => {
           const {
             key,
             name,
-            carplate,
-            phonenumber,
+            carPlate,
+            phoneNumber,
             category,
             categoryName,
             registeredAt,
             detail,
           } = result;
-          setPersonId(key);
-          setName(name);
-          setCarplate(carplate);
-          setPhonenumber(phonenumber);
-          setCategory(category);
-          setCategoryName(categoryName);
-          setRegisteredAt(registeredAt);
+          // setPersonId(key);
+          // setName(name);
+          // setcarPlate(carPlate);
+          // setPhonenumber(phoneNumber);
+          // setCategory(category);
+          // setCategoryName(categoryName);
+          // setRegisteredAt(registeredAt);
 
           form.setFieldsValue({
             name,
-            carplate: carplate,
-            phonenumber: phonenumber,
-            type: category,
+            carPlate: carPlate,
+            phoneNumber: phoneNumber,
+            category,
             detail,
           });
 
@@ -85,20 +85,20 @@ const AddUpdate = (props) => {
   const getPersonById = async (id) => {
     let result = await reqPersonById(id);
     if (result.exists()) {
-      const { carplate, createdAt, name, phonenumber, type, detail } =
+      const { carPlate, createdAt, name, phoneNumber, category, detail } =
         result.data();
-      setName(name);
-      setCarplate(carplate);
-      setPhonenumber(phonenumber);
-      setCategory(type);
-      setRegisteredAt(createdAt);
-      setDetail(detail);
+      // setName(name);
+      // setcarPlate(carPlate);
+      // setPhonenumber(phoneNumber);
+      // setCategory(category);
+      // setRegisteredAt(createdAt);
+      // setDetail(detail);
       console.log(detail);
       form.setFieldsValue({
         name,
-        carplate,
-        phonenumber,
-        type,
+        carPlate,
+        phoneNumber,
+        category,
         detail,
       });
 
@@ -112,9 +112,9 @@ const AddUpdate = (props) => {
     let result = await reqCategoryList();
 
     if (!result.empty) {
-      const resultList = result.docs.map((doc) => ({
+      const resultList = result.map((doc) => ({
         key: doc.id,
-        categoryName: doc.data().type,
+        categoryName: doc.data().category,
       }));
       setCategoryList(resultList.reverse());
     }
@@ -169,9 +169,9 @@ const AddUpdate = (props) => {
               name: obj.name.toUpperCase(),
             });
           }
-          if (obj.carplate) {
+          if (obj.carPlate) {
             form.setFieldsValue({
-              carplate: obj.carplate.toUpperCase(),
+              carPlate: obj.carPlate.toUpperCase(),
             });
           }
         }}
@@ -190,15 +190,15 @@ const AddUpdate = (props) => {
           <Input style={{ width: "100%" }} placeholder="Insert your name" />
         </Form.Item>
         <Form.Item
-          label="Carplate"
-          name="carplate"
-          rules={[{ required: true, message: "Please input your carplate!" }]}
+          label="carPlate"
+          name="carPlate"
+          rules={[{ required: true, message: "Please input your carPlate!" }]}
         >
-          <Input style={{ width: "100%" }} placeholder="Insert your carplate" />
+          <Input style={{ width: "100%" }} placeholder="Insert your carPlate" />
         </Form.Item>
         <Form.Item
           label="Phone No"
-          name="phonenumber"
+          name="phoneNumber"
           rules={[
             { required: true, message: "Please input your phone number!" },
           ]}
@@ -208,10 +208,10 @@ const AddUpdate = (props) => {
         <Form.Item
           label="Category"
           name="type"
-          rules={[{ required: true, message: "Please select your category!" }]}
+          rules={[{ required: true, message: "Please choose your category!" }]}
         >
           <Select
-            placeholder="Select your category"
+            placeholder="Please choose the category"
             // onChange={onGenderChange}
             allowClear
           >

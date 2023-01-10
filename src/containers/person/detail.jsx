@@ -9,11 +9,13 @@ import "./detail.css";
 
 const Detail = (props) => {
   const [name, setName] = React.useState("");
-  const [phonenumber, setPhonenumber] = React.useState("");
+  const [phoneNumber, setPhonenumber] = React.useState("");
   const [carplate, setCarplate] = React.useState("");
   const [categoryId, setCategoryId] = React.useState("");
   const [categoryName, setCategoryName] = React.useState("");
   const [registeredAt, setRegisteredAt] = React.useState("");
+  const [detail, setDetail] = React.useState("");
+
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -29,13 +31,14 @@ const Detail = (props) => {
       //Set Person information from redux
       let result = reduxPersonList.find((item) => item.key == id);
       if (result) {
-        const { carplate, category, name, phonenumber, registeredAt } = result;
+        const { carplate, category, name, phoneNumber, registeredAt,detail } = result;
         myCategoryId = category;
         setName(name);
-        setPhonenumber(phonenumber);
+        setPhonenumber(phoneNumber);
         setCarplate(carplate);
         setCategoryId(category);
         setRegisteredAt(registeredAt);
+        setDetail(detail)
       }
       if (reduxCategoryList.length) {
         //Set Category information from redux
@@ -53,20 +56,22 @@ const Detail = (props) => {
   }, []);
 
   const getPageData = async (id) => {
-    const { type } = await getPersonById(id); //set person information, include category id
-    getCategoryById(type); //transform category id -> category name
+    const category = await getPersonById(id); //set person information, include category id
+    getCategoryById(category); //transform category id -> category name
   };
 
   const getPersonById = async (id) => {
     let result = await reqPersonById(id);
     if (result.exists()) {
-      const { carplate, createdAt, name, phonenumber, type } = result.data();
+      const { carplate, createdAt, name, phoneNumber, category,detail } = result.data();
       setName(name);
-      setPhonenumber(phonenumber);
+      setPhonenumber(phoneNumber);
       setCarplate(carplate);
-      setCategoryId(type);
+      setCategoryId(category);
       setRegisteredAt(dayjs(createdAt.toDate()).format("YYYY-MM-DD HH:mm:ss"));
-      return result.data();
+      setDetail(detail)
+      console.log(detail)
+      return category;
     } else {
       message.warning("Connection to database failed");
     }
@@ -75,8 +80,8 @@ const Detail = (props) => {
   const getCategoryById = async (id) => {
     let result = await reqCategoryById(id);
     if (result.exists()) {
-      const { type } = result.data();
-      setCategoryName(type);
+      const { category } = result.data();
+      setCategoryName(category);
       setIsLoading(false);
     } else {
       message.warning("Connection to database failed");
@@ -90,7 +95,7 @@ const Detail = (props) => {
     },
     {
       title: "Phone No",
-      content: phonenumber,
+      content: phoneNumber,
     },
     {
       title: "Car Plate",
@@ -104,6 +109,10 @@ const Detail = (props) => {
       title: "Registered At",
       content: registeredAt,
     },
+    {
+      title : "Detail",
+      content : detail,
+    }
   ];
 
   return (
@@ -134,8 +143,8 @@ const Detail = (props) => {
             return (
               <>
                 <List.Item>
-                  <span className="person-title">{item.title} :</span>
-                  <span>{item.content}</span>
+                  <span style={{width:"30%", alignSelf:"flex-start"}} className="person-title">{item.title} :</span>
+                  <span dangerouslySetInnerHTML={{__html:item.content}}></span>
                 </List.Item>
               </>
             );

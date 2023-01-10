@@ -18,11 +18,11 @@ const { Item } = Form;
 const Category = (props) => {
   const [form] = Form.useForm();
 
-  const[categoryList, setCategoryList] = React.useState([])
-  const[isModalOpen, setIsModalOpen] = React.useState(false)
-  const[operationType, setOperationType] = React.useState("")
-  const[isLoading, setIsLoading] = React.useState(true)
-  const[categoryId, setCategoryId] = React.useState("")
+  const [categoryList, setCategoryList] = React.useState([]);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [operationType, setOperationType] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [categoryId, setCategoryId] = React.useState("");
 
   React.useEffect(() => {
     getCatagoryList();
@@ -31,18 +31,18 @@ const Category = (props) => {
   const getCatagoryList = async () => {
     const result = await reqCategoryList();
     if (!result.empty) {
-      const resultList = result.docs.map((doc) => ({
+      const resultList = result.map((doc) => ({
         key: doc.id,
-        categoryName: doc.data().type,
+        categoryName: doc.data().category,
       }));
-      setCategoryList(resultList.reverse())
-      setIsLoading(false)
+      setCategoryList(resultList.reverse());
+      setIsLoading(false);
 
       //save CategoryList to redux
-      props.saveCategory(resultList)
+      props.saveCategory(resultList);
     } else {
       message.warning("Retrieved empty data");
-      setIsLoading(false)
+      setIsLoading(false);
     }
   };
 
@@ -55,16 +55,16 @@ const Category = (props) => {
   };
 
   const showAdd = () => {
-    setIsModalOpen(true)
-    setOperationType("add")
+    setIsModalOpen(true);
+    setOperationType("add");
   };
 
   const showUpdate = (item) => {
     const { key, categoryName } = item;
     form.setFieldValue("categoryName", categoryName);
-    setCategoryId(key)
-    setIsModalOpen(true)
-    setOperationType("update")
+    setCategoryId(key);
+    setIsModalOpen(true);
+    setOperationType("update");
   };
 
   const showDelete = (item) => {
@@ -79,19 +79,19 @@ const Category = (props) => {
         toDelete({ categoryId: key, categoryName });
       },
     });
-    setCategoryId(key)
-    setOperationType("delete")
+    setCategoryId(key);
+    setOperationType("delete");
   };
 
   const toAdd = async (values) => {
     let { categoryName } = values;
     await reqCheckDuplicationCategoryList(categoryName);
-    let result = await reqAddCategory({ type: categoryName });
+    let result = await reqAddCategory({ category: categoryName });
     if (result) {
       message.success("Successfully added a new category");
       form.resetFields();
       getCatagoryList();
-      setIsModalOpen(false)
+      setIsModalOpen(false);
     } else {
       message.error("Add category failed, please try again");
     }
@@ -99,10 +99,10 @@ const Category = (props) => {
 
   const toUpdate = async (categoryObj) => {
     let { categoryId, categoryName } = categoryObj;
-    let result = await reqUpdateCategory(categoryId,{type:categoryName});
+    let result = await reqUpdateCategory(categoryId, { category: categoryName });
     message.success("Successfully updated category name");
     getCatagoryList();
-    setIsModalOpen(false)
+    setIsModalOpen(false);
   };
 
   const toDelete = async (categoryObj) => {
@@ -127,14 +127,14 @@ const Category = (props) => {
         return;
       })
       .catch((errorInfo) => {
-        console.log(errorInfo)
+        console.log(errorInfo);
         message.warning(errorInfo.errorFields[0].errors[0]);
       });
   };
 
   const handleCancel = () => {
     form.resetFields();
-    setIsModalOpen(false)
+    setIsModalOpen(false);
   };
 
   const columns = [
@@ -201,9 +201,7 @@ const Category = (props) => {
       </Card>
 
       <Modal
-        title={
-          operationType === "add" ? "Add Category" : "Update Category"
-        }
+        title={operationType === "add" ? "Add Category" : "Update Category"}
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
@@ -238,6 +236,11 @@ const Category = (props) => {
   );
 };
 
-export default connect((state) => {return {}}, {
-  saveCategory: createSaveCategoryAction,
-})(Category);
+export default connect(
+  (state) => {
+    return {};
+  },
+  {
+    saveCategory: createSaveCategoryAction,
+  }
+)(Category);

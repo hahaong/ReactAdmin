@@ -1,5 +1,5 @@
 .admin {
-  height: 100%;
+  min-height: 100%;
 }
 .admin .sider {
   color: white;
