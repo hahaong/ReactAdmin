@@ -1,0 +1,42 @@
+.header {
+  height: 80px;
+  background-color: white;
+}
+.header .header-top {
+  height: 40px;
+  text-align: right;
+  line-height: 40px;
+  border-bottom: 1px solid #1677ff;
+}
+.header .header-bottom {
+  height: 40px;
+  display: flex;
+}
+.header .header-bottom .header-bottom-left {
+  position: relative;
+  width: 25%;
+  text-align: center;
+  line-height: 40px;
+  font-size: 20px;
+}
+.header .header-bottom .header-bottom-left::after {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 40px;
+  content: '';
+  border-top: 20px solid white;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 20px solid transparent;
+}
+.header .header-bottom .header-bottom-right {
+  width: 75%;
+  text-align: right;
+  line-height: 40px;
+  margin-right: 20px;
+}
+.header .username {
+  margin: 0px 0px 0px 10px;
+}
+/*# sourceMappingURL=./header.css.map */
